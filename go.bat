@@ -1,0 +1,1 @@
+D:\Programming\Python\Flask\venv\Scripts\activate
