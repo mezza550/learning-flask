@@ -7,37 +7,30 @@ from flask.ext.sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 
 app.secret_key = "jezebel"
-app.config['SLQALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 #app.database = "sample.db"
+
 
 # create sqlalchemy object
 db = SQLAlchemy(app)
 
+from models import *
 
 # login required decorator
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-	if 'logged_in' in session:
-	    return f(*args, **kwargs)
-	else:
-	    flash('You need to login first.')
-	    return redirect(url_for('login'))
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('You need to login first.')
+            return redirect(url_for('login'))
     return wrap
 
 @app.route('/')
 @login_required
 def home():
-    posts = []
-    try: 
-	g.db = connect_db()
-	cur = g.db.execute('select * from posts')
-
-    #posts = [dict(title=row[0], description=row[1]) for row in cur.fetchall()]
-
-	g.db.close()
-    except sqlite3.OperationalError:
-	flash("You have no database!")
+    posts = db.session.query(BlogPost).all()
     return render_template('index.html', posts=posts)
 
 
@@ -50,12 +43,13 @@ def welcome():
 def login():
     error = None
     if request.method == 'POST':
-	if request.form['username'] != 'admin' or request.form['password'] != 'admin':
-	    error = 'Invalid credentials, please try again.'
-	else:
-	    session['logged_in'] = True
-	    flash('You were just logged in, cool.')
-	return redirect(url_for('home'))
+        if (request.form['username'] != 'admin') \
+                or request.form['password'] != 'admin':
+            error = 'Invalid Credentials. Please try again.'
+        else:
+            session['logged_in'] = True
+            flash('You were logged in.')
+            return redirect(url_for('home'))
     return render_template('login.html', error=error)
 
 @app.route('/logout')
